@@ -1,0 +1,6 @@
+**/*.txt
+__pycache__/
+venv_py/
+.idea/
+*.py 
+.python-version
