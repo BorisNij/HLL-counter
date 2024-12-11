@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"hash/fnv"
+	"io"
 	"math"
 	"math/bits"
 	"os"
@@ -96,7 +97,6 @@ func (thisHll HyperLogLog) Merge(anotherHll HyperLogLog) error {
 	return nil
 }
 
-// create a 32-bit hash
 func createHash(stream []byte) uint32 {
 	h := fnv.New32()
 	_, err := h.Write(stream)
@@ -107,7 +107,6 @@ func createHash(stream []byte) uint32 {
 	h.Reset()
 	return sum
 }
-
 func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, error) {
 	// Get the number of CPU cores
 	numCores := runtime.NumCPU()
@@ -148,7 +147,7 @@ func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, err
 			defer func(partFile *os.File) {
 				err := partFile.Close()
 				if err != nil {
-
+					errors <- fmt.Errorf("error closing file: %v", err)
 				}
 			}(partFile)
 
@@ -165,7 +164,7 @@ func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, err
 				line, err := reader.ReadBytes('\n')
 				currentOffset += int64(len(line))
 				if err != nil {
-					if err.Error() == "EOF" {
+					if err == io.EOF {
 						break
 					}
 					errors <- fmt.Errorf("error reading file: %v", err)
@@ -179,20 +178,23 @@ func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, err
 	}
 
 	// Aggregate results
-	finalHLL := NewHyperLogLog(precision)
+	var mergedHLL *HyperLogLog
 	for i := 0; i < numCores; i++ {
 		select {
 		case hll := <-results:
-			err := finalHLL.Merge(*hll)
-			if err != nil {
-				return nil, fmt.Errorf("error merging HyperLogLogs: %v", err)
+			if mergedHLL == nil {
+				mergedHLL = hll
+			} else {
+				if err := mergedHLL.Merge(*hll); err != nil {
+					return nil, fmt.Errorf("error merging HyperLogLogs: %v", err)
+				}
 			}
 		case err := <-errors:
 			return nil, err
 		}
 	}
 
-	return &finalHLL, nil
+	return mergedHLL, nil
 }
 
 func main() {
