@@ -111,6 +111,13 @@ func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, err
 	// Get the number of CPU cores
 	numCores := runtime.NumCPU()
 
+	// Open the file
+	partFile, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %v", err)
+	}
+	defer partFile.Close()
+
 	// Get the file size
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
@@ -137,19 +144,6 @@ func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, err
 
 		go func(start, end int64) {
 			hll := NewHyperLogLog(precision)
-
-			// Open the file and seek to the start offset
-			partFile, err := os.Open(filePath)
-			if err != nil {
-				errors <- fmt.Errorf("error opening file: %v", err)
-				return
-			}
-			defer func(partFile *os.File) {
-				err := partFile.Close()
-				if err != nil {
-					errors <- fmt.Errorf("error closing file: %v", err)
-				}
-			}(partFile)
 
 			_, err = partFile.Seek(start, 0)
 			if err != nil {
