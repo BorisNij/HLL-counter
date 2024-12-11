@@ -36,7 +36,7 @@ precision of 16 bits and estimation error of up to 0.1%).
 # Clone the repository
 git clone https://github.com/BorisNij/HLL-counter.git
 cd HLL-counter
-# Cimpile and run
+# Compile and run
 go run calc_uniq.go <input_file>
 ```
 
