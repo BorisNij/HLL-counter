@@ -49,7 +49,7 @@ func NewHyperLogLog(bitsForRegisterIndex uint) HyperLogLog {
 	}
 }
 
-func (thisHll HyperLogLog) Add(data []byte) {
+func (thisHll *HyperLogLog) Add(data []byte) {
 	hashedData := createHash(data)
 	leadingZeros := bits.LeadingZeros32(hashedData << thisHll.bitsForRegisterIndex)
 	firstSetBitIndex := 1 + leadingZeros
@@ -60,7 +60,7 @@ func (thisHll HyperLogLog) Add(data []byte) {
 	}
 }
 
-func (thisHll HyperLogLog) Count() uint64 {
+func (thisHll *HyperLogLog) Count() uint64 {
 	sum := 0.0
 	for _, registerValue := range thisHll.registers {
 		sum += math.Pow(math.Pow(2, float64(registerValue)), -1)
@@ -85,7 +85,7 @@ func (thisHll HyperLogLog) Count() uint64 {
 	return uint64(estimate)
 }
 
-func (thisHll HyperLogLog) Merge(anotherHll HyperLogLog) error {
+func (thisHll *HyperLogLog) Merge(anotherHll *HyperLogLog) error {
 	if thisHll.totalRegisters != anotherHll.totalRegisters {
 		return fmt.Errorf("number of registers doesn't match: %d != %d", thisHll.totalRegisters, anotherHll.totalRegisters)
 	}
@@ -185,7 +185,7 @@ func processFileConcurrently(filePath string, precision uint) (*HyperLogLog, err
 			if mergedHLL == nil {
 				mergedHLL = hll
 			} else {
-				if err := mergedHLL.Merge(*hll); err != nil {
+				if err := mergedHLL.Merge(hll); err != nil {
 					return nil, fmt.Errorf("error merging HyperLogLogs: %v", err)
 				}
 			}
