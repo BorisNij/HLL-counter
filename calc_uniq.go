@@ -206,6 +206,6 @@ func main() {
 		return
 	}
 
-	// Print the estimated count of unique addresses
-	fmt.Printf("Estimated number of unique IPv4 addresses: %d\n", hll.Count())
+	// Print the estimated count of unique rows
+	fmt.Printf("Estimated number of unique rows: %d\n", hll.Count())
 }
